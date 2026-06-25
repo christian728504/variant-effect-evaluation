@@ -1,11 +1,10 @@
 """The picklable unit of work for one SLURM benchmark job.
 
-`run_single_benchmark(dataset, model, accession, assay)` is a module-level function
-whose args are all plain strings, so `submitit`/cloudpickle can ship it to a compute
-node with no closure baggage. All heavy imports (torch, the scorers) happen inside the
-call. It is fully standalone-runnable for debugging — no SLURM required:
-
-    python scripts/benchmark_job.py caqtls_microglia cherimoya microglia NA
+`run_single_benchmark(dataset, model, accession, assay, config_path)` is a module-level
+function whose args are all plain strings, so `submitit`/cloudpickle can ship it to a
+compute node with no closure baggage. The config is re-loaded on the node from
+`config_path` (the YAML on the shared filesystem) — nothing config-related is pickled.
+All heavy imports (torch, the scorers) happen inside the call.
 
 On every run it emits a comprehensive **state report** (Stage 4 §7) to stderr and to
 `logs/<stem>.state.log` (the 4 job params + SLURM_JOB_ID, hostname, GPU name,
@@ -20,18 +19,13 @@ from __future__ import annotations
 
 import os
 import socket
-import sys
 import time
 from datetime import datetime, timezone
-from pathlib import Path
-
-# Make config / utils importable for standalone runs regardless of CWD.
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from loguru import logger
 
-from config import load_config
-from utils import (
+from .config import load_config
+from .utils import (
     build_scorer,
     build_variant_set,
     compute_metrics,
@@ -75,22 +69,23 @@ def _emit_state_report(header: dict, vs, scorer) -> None:
 
 
 def run_single_benchmark(
-    dataset: str, model: str, accession: str, assay: str
+    dataset: str, model: str, accession: str, assay: str, config_path: str
 ) -> dict:
     """Score one (dataset, model, accession, assay) config; return a result dict.
 
     `assay` is a plain string; "NA" (or empty) means the dataset has no assay
-    distinction (microglia). Never raises — failures are captured into the returned
-    dict's `status`/`error_message`.
+    distinction (microglia). `config_path` is the YAML path the config is loaded from on
+    the compute node. Never raises — failures are captured into the returned dict's
+    `status`/`error_message`.
     """
     t0 = time.perf_counter()
     configure_logging()
-    # Load the declarative config on the compute node (the YAML travels with the repo on
-    # the shared filesystem); nothing config-related is pickled into this function.
-    cfg = load_config()
+    # Load the declarative config on the compute node from the threaded YAML path (the
+    # file travels with the repo on the shared filesystem); nothing config-related is
+    # pickled into this function — only the plain-string args are.
+    cfg = load_config(config_path)
     results_dir = cfg.paths.results
     logs_dir = cfg.paths.logs
-    assay_norm = None if assay in (None, "", "NA") else assay
     stem = job_stem(dataset, model, accession, assay)
     state_log_path = logs_dir / f"{stem}.state.log"
     result_parquet = results_dir / f"{stem}.parquet"
@@ -175,7 +170,7 @@ def run_single_benchmark(
         except Exception:
             pass
         result["wall_time_seconds"] = round(time.perf_counter() - t0, 2)
-        # Durable result sidecar — lets `orchestrate.py --collect` aggregate across
+        # Durable result sidecar — lets the `collect` command aggregate across
         # process boundaries (no need to hold submitit Job objects), and captures
         # error rows too. Written last so it reflects the final status + wall time.
         try:
@@ -188,17 +183,3 @@ def run_single_benchmark(
             pass
 
     return result
-
-
-if __name__ == "__main__":
-    import argparse
-    import json
-
-    p = argparse.ArgumentParser(description="Run one benchmark job standalone (no SLURM).")
-    p.add_argument("dataset")
-    p.add_argument("model")
-    p.add_argument("accession")
-    p.add_argument("assay", nargs="?", default="NA", help="ATAC | DNASE | NA")
-    a = p.parse_args()
-    out = run_single_benchmark(a.dataset, a.model, a.accession, a.assay)
-    print(json.dumps(out, indent=2))

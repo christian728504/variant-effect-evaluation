@@ -16,14 +16,19 @@ dependencies = [
     "pyyaml>=6.0.3",
 ]
 
+[project.scripts]
+variant-effect-evaluation = "variant_effect_evaluation.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/variant_effect_evaluation"]
+
 [tool.uv]
-# Application project (scripts/, not an importable package) — nothing to build.
-package = false
 override-dependencies = ["nvidia-cudnn-cu13==9.21.1.3"]
 
-# The library is consumed as a pinned git dependency. uv does NOT propagate a
-# dependency's own [tool.uv.sources], and the library's model deps are git-only
-# (not on PyPI), so they must be re-declared here verbatim for resolution to work.
 [tool.uv.sources]
 variant-effect-prediction = { git = "ssh://git@github.com/christian728504/variant-effect-prediction.git", rev = "255b00d900fe532743eb5ab122dba60df579554e" }
 cherimoya = { git = "https://github.com/jmschrei/cherimoya.git", rev = "b7948c1ee6f648b05e50f52c098fcc5e4f0fede9" }

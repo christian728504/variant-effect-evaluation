@@ -1,13 +1,10 @@
 """Static matplotlib bar charts of the variant-effect benchmark (`pearson_signed`).
 
-Standalone extraction of the PNG-export cell from `eval_viz.py` (the marimo
-notebook) — no marimo/altair/quak, just matplotlib. Reads the active run's
-`evals/results/all_benchmarks.parquet` and writes one fixed-scope bar chart PNG
-per dataset subset into that same `evals/results/` directory (the symlink
-resolves to whichever `run*/results/` is currently active). Same model color
-palette as the interactive chart.
+No marimo/altair/quak, just matplotlib. `render_all(cfg)` reads
+`<results>/all_benchmarks.parquet` and writes one fixed-scope bar chart PNG per dataset
+subset into that same `cfg.paths.results` directory. Driven by the CLI:
 
-    python notebooks/eval_static_plots.py
+    variant-effect-evaluation plot
 """
 
 from __future__ import annotations
@@ -19,6 +16,8 @@ import matplotlib.pyplot as plt
 import polars as pl
 from loguru import logger
 from matplotlib.patches import Patch
+
+from .config import EvalConfig
 
 mpl.rcParams["figure.dpi"] = 300
 mpl.rcParams["font.family"] = "SF Pro Text"
@@ -37,7 +36,7 @@ MODEL_DISPLAY = {
 }
 
 # One fixed-scope bar chart per subset. dsqtls_yoruba + bqtls_pu1 are the new
-# GRCh37 GM12878 LCL datasets — same ENCODE ATAC+DNASE accessions as caqtls_eu.
+# hg19 GM12878 LCL datasets — same ENCODE ATAC+DNASE accessions as caqtls_eu.
 PLOTS = [
     dict(
         filename="bench_caqtls_african_encode_all_models_pearson_signed.png",
@@ -76,14 +75,14 @@ PLOTS = [
     ),
     dict(
         filename="bench_dsqtls_yoruba_encode_all_models_pearson_signed.png",
-        title="dsQTL Yoruba LCL (GRCh37) — ENCODE ATAC + DNASE",
+        title="dsQTL Yoruba LCL (hg19) — ENCODE ATAC + DNASE",
         datasets=["dsqtls_yoruba"],
         accessions=["ENCSR000EMT", "ENCSR637XSC"],
         models=None,
     ),
     dict(
         filename="bench_bqtls_pu1_encode_all_models_pearson_signed.png",
-        title="bQTL PU1/SPI1 LCL (GRCh37) — ENCODE ATAC + DNASE",
+        title="bQTL PU1/SPI1 LCL (hg19) — ENCODE ATAC + DNASE",
         datasets=["bqtls_pu1"],
         accessions=["ENCSR000EMT", "ENCSR637XSC"],
         models=None,
@@ -177,11 +176,17 @@ def render(spec: dict, bench: pl.DataFrame, out_dir: Path) -> tuple[str, int]:
     return str(out_path), n
 
 
-def main() -> None:
-    repo_root = Path(__file__).resolve().parents[1]
-    out_dir = repo_root / "results"
+def render_all(cfg: EvalConfig) -> int:
+    """Render every subset bar chart from all_benchmarks.parquet into cfg.paths.results.
+
+    Returns 1 (and renders nothing) when the aggregated parquet is absent — run
+    `collect` first.
+    """
+    out_dir = cfg.paths.results
     all_bench_path = out_dir / "all_benchmarks.parquet"
-    assert all_bench_path.exists(), f"missing {all_bench_path}"
+    if not all_bench_path.exists():
+        logger.warning("missing {} — run `collect` first", all_bench_path)
+        return 1
 
     bench = pl.read_parquet(all_bench_path)
 
@@ -192,7 +197,4 @@ def main() -> None:
             logger.success("wrote {} — {} bars", path, n)
         else:
             logger.warning("skipped {} — no matching benchmarks yet", spec["filename"])
-
-
-if __name__ == "__main__":
-    main()
+    return 0

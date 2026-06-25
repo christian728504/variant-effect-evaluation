@@ -1,6 +1,6 @@
 # Declarative definition of the Stage 4 benchmark matrix + cluster parameters.
-# Parsed and validated by scripts/config.py (pydantic v2); the logic that consumes
-# it lives in scripts/utils.py. All paths are repo-relative: project_root is derived
+# Parsed and validated by variant_effect_evaluation.config (pydantic v2); the logic that
+# consumes it lives in variant_effect_evaluation.utils. All paths are repo-relative: project_root is derived
 # from this file's location (config/ sits directly under the repo root).
 
 paths:
@@ -14,21 +14,22 @@ paths:
   # genome build -> FASTA path under <data_dir>/<references_subdir>. Both are UCSC
   # chr1-named, bgzip + faidx indexed; a dataset selects its build via genome_build.
   ref_fastas:
-    GRCh38: GRCh38/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta.gz
-    GRCh37: GRCh37/GCF_000001405.25_GRCh37.p13_genomic.fa.gz
+    hg38: hg38/hg38.fa.gz
+    hg19: hg19/hg19.fa.gz
 
 # Per-model construction conventions (the build_scorer logic in utils.py reads these).
 models:
-  # Cherimoya .torch dirs for non-ENCODE models, keyed by pseudo-accession; the
-  # dir is taken under <weights>/cherimoya/models/. ENCODE accessions map to themselves.
+  # Cherimoya .torch fold dirs for non-ENCODE models, keyed by pseudo-accession, as
+  # subpaths under <weights>/cherimoya/ (AFGR pops live under afgr/<Cap>). ENCODE
+  # accessions are not listed and map to themselves (<weights>/cherimoya/<ACCESSION>).
   cherimoya_celltype_dirs:
-    microglia: Microglia
-    esan: Esan
-    gambian: Gambian
-    luhya: Luhya
-    maasai: Maasai
-    mende: Mende
-    yoruba: Yoruba
+    microglia: microglia
+    esan: afgr/Esan
+    gambian: afgr/Gambian
+    luhya: afgr/Luhya
+    maasai: afgr/Maasai
+    mende: afgr/Mende
+    yoruba: afgr/Yoruba
   # ChromBPNet (TF/h5) model dirs (models/fold_N/*.h5), as subpaths under
   # <weights>/chrombpnet/. Membership here selects the h5-folds branch; ENCODE
   # accessions (not listed) fall through to the tar-discovery branch.
@@ -45,12 +46,14 @@ models:
     enformer: 2
     borzoi: 2
     alphagenome: 1
-  # Weights paths under <weights>/ for each many-tracks / cherimoya model.
+  # Per-model base dir under <weights>/. BPNet-like + cherimoya append a per-accession
+  # leaf (see *_celltype_dirs); alphagenome points straight at its safetensors file.
   weights_subdirs:
+    chrombpnet: chrombpnet
+    cherimoya: cherimoya
     enformer: enformer-pytorch
     borzoi: borzoi-pytorch
     alphagenome: alphagenome-pytorch/model_all_folds.safetensors
-    cherimoya: cherimoya/models
 
 # The benchmark datasets. Each `plan` enumerates every (model, accession, assay) job
 # that scores the dataset. BPNet-like + AlphaGenome use the assay-matched accession
@@ -68,7 +71,7 @@ datasets:
     pvalue_col: obs.pval
     isused_col: var.isused
     source_assay: ATAC
-    genome_build: GRCh38
+    genome_build: hg38
     significance_neglog10p: 6.0
     notes: "European LCL ATAC caQTLs; significant = -log10(p)>6."
     plan:
@@ -92,7 +95,7 @@ datasets:
     pvalue_col: obs.pval
     isused_col: var.isused
     source_assay: ATAC
-    genome_build: GRCh38
+    genome_build: hg38
     significance_neglog10p: 5.0
     notes: "African LCL ATAC caQTLs; significant = -log10(p)>5."
     plan:
@@ -128,7 +131,7 @@ datasets:
     pvalue_col: null
     isused_col: var.isused
     source_assay: ATAC
-    genome_build: GRCh38
+    genome_build: hg38
     significance_neglog10p: null   # all rows already significant ASB sites
     notes: "African LCL allele-specific binding; all rows pre-significant."
     plan:
@@ -156,14 +159,14 @@ datasets:
     pvalue_col: obs.Z_score_fixed
     isused_col: var.isused
     source_assay: scATAC
-    genome_build: GRCh38
+    genome_build: hg38
     significance_neglog10p: null   # all rows already significant caQTLs
     notes: "Microglia scATAC caQTLs; all rows pre-significant; BPNet-like only."
     plan:
       - {model: chrombpnet, accession: microglia, assay: null}
       - {model: cherimoya,  accession: microglia, assay: null}
 
-  # dsQTL/bQTL are GM12878 LCL datasets (GRCh37) — same biosample as caqtls_eu, so
+  # dsQTL/bQTL are GM12878 LCL datasets (hg19) — same biosample as caqtls_eu, so
   # the same 8-model plan applies (ATAC ENCSR637XSC + DNase ENCSR000EMT).
   dsqtls_yoruba:
     key: dsqtls_yoruba
@@ -180,9 +183,9 @@ datasets:
     pvalue_col: null
     isused_col: var.isused
     source_assay: DNASE
-    genome_build: GRCh37
+    genome_build: hg19
     significance_label_col: obs.label   # 1 = significant, -1 = control
-    notes: "Yoruban LCL dsQTLs (GRCh37); significant = obs.label==1 (~560 positives)."
+    notes: "Yoruban LCL dsQTLs (hg19); significant = obs.label==1 (~560 positives)."
     plan:
       - {model: chrombpnet,  accession: ENCSR637XSC, assay: ATAC}
       - {model: cherimoya,   accession: ENCSR637XSC, assay: ATAC}
@@ -204,9 +207,9 @@ datasets:
     pvalue_col: obs.pval
     isused_col: var.isused
     source_assay: ATAC
-    genome_build: GRCh37
+    genome_build: hg19
     significance_neglog10p: 4.0
-    notes: "PU1/SPI1 bQTLs (GRCh37); significant = -log10(obs.pval)>4."
+    notes: "PU1/SPI1 bQTLs (hg19); significant = -log10(obs.pval)>4."
     plan:
       - {model: chrombpnet,  accession: ENCSR637XSC, assay: ATAC}
       - {model: cherimoya,   accession: ENCSR637XSC, assay: ATAC}

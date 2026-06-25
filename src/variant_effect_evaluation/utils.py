@@ -14,7 +14,7 @@ import sys
 import polars as pl
 from loguru import logger
 
-from config import EvalConfig, ModelSpec, QTLDataset
+from .config import EvalConfig, ModelSpec, QTLDataset
 
 
 def configure_logging(level: str = "INFO") -> None:
@@ -55,7 +55,7 @@ def job_stem(dataset: str, model: str, accession: str, assay: str | None) -> str
 # --------------------------------------------------------------------------------
 
 
-def ref_genome(cfg: EvalConfig, build: str = "GRCh38"):
+def ref_genome(cfg: EvalConfig, build: str = "hg38"):
     from variant_effect_prediction import RefGenome
 
     return RefGenome(cfg.paths.ref_fasta_paths[build])
@@ -161,7 +161,7 @@ def _find_chrombpnet_model_tar(cfg: EvalConfig, accession: str, max_members_per_
         if accession in cache and Path(cache[accession]).exists():
             return Path(cache[accession])
 
-    acc_dir = cfg.paths.weights / "chrombpnet" / accession
+    acc_dir = cfg.paths.weights / cfg.models.weights_subdirs["chrombpnet"] / accession
     found: Path | None = None
     for tar in sorted(acc_dir.glob("*.tar.gz")):
         with tarfile.open(tar, "r:*") as tf:
@@ -213,9 +213,10 @@ def _build_chrombpnet(accession: str, assay: str | None, cfg: EvalConfig, rg, **
     from variant_effect_prediction import FoldedModelWeights
     from variant_effect_prediction.scorers import ChromBPNetVariantScorer
 
+    root = cfg.paths.weights / cfg.models.weights_subdirs["chrombpnet"]
     subpath = cfg.models.chrombpnet_celltype_dirs.get(accession)
     if subpath is not None:  # primary-cell / AFGR syn h5 folds
-        fw = FoldedModelWeights.from_chrombpnet_h5_folds(cfg.paths.weights / "chrombpnet" / subpath)
+        fw = FoldedModelWeights.from_chrombpnet_h5_folds(root / subpath)
     else:  # ENCODE tar (bias + nobias h5 blobs)
         tar = _find_chrombpnet_model_tar(cfg, accession)
         fw = FoldedModelWeights.from_chrombpnet_tar(tar, eid=accession)

@@ -19,7 +19,9 @@ from typing import Literal
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, model_validator
 
-DEFAULT_CONFIG = Path(__file__).resolve().parents[1] / "config" / "eval.yaml"
+# src/variant_effect_evaluation/config.py → parents[2] is the repo root (config/ sits
+# directly under it). Valid under the editable install, which keeps the source in place.
+DEFAULT_CONFIG = Path(__file__).resolve().parents[2] / "config" / "eval.yaml"
 
 _FROZEN = ConfigDict(frozen=True, extra="forbid")
 
@@ -108,7 +110,7 @@ class QTLDataset(BaseModel):
     pvalue_col: str | None = None
     isused_col: str | None = None
     source_assay: Literal["ATAC", "DNASE", "scATAC"]
-    genome_build: str = "GRCh38"
+    genome_build: str = "hg38"
     # Significance: positives are -log10(pvalue) > this. None => pre-filtered file.
     significance_neglog10p: float | None = None
     # Alternative significance: keep rows whose label column == 1 (dsQTLs).
