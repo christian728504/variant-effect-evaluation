@@ -5,9 +5,9 @@ A declarative, SLURM-native benchmark harness for the
 model library. It scores QTL / benchmark datasets with each sequence-to-function model and
 reports how well predicted effects track published effect sizes.
 
-Point it at a config, run one command per stage, and get a tidy table of correlations plus
-publication-ready bar charts — one SLURM job per (dataset, model, accession, assay) cell of
-the matrix, fully parallel on GPU.
+It runs one command per stage, reads its matrix from a config file, and produces a parquet
+table of correlations plus bar charts. Each (dataset, model, accession, assay) cell of the
+matrix runs as a separate SLURM job.
 
 ## Overview
 
@@ -19,21 +19,21 @@ of trained models (ChromBPNet, Cherimoya, AlphaGenome, Enformer, Borzoi), the ha
 3. computes **signed and unsigned Spearman + Pearson** of prediction vs. published effect size;
 4. aggregates everything into a single parquet and renders bar charts.
 
-The entire matrix — datasets, per-dataset model plans, weight/cell-type conventions, and the
-SLURM/executor parameters — is defined in one human-editable file, [`config/eval.yaml`](config/eval.yaml),
-parsed and validated by a pydantic v2 loader. Nothing about the run is hardcoded in Python.
+The matrix — datasets, per-dataset model plans, weight/cell-type conventions, and the
+SLURM/executor parameters — is defined in one file, [`config/eval.yaml`](config/eval.yaml),
+parsed and validated by a pydantic v2 loader.
 
 ## Features
 
-- **Single declarative config** — the 54-job matrix, paths, model conventions, and cluster
-  parameters all live in `config/eval.yaml`; the code is pure logic.
-- **One CLI, four verbs** — `dry-run`, `submit`, `collect`, `plot`. Almost no flags.
-- **Validated on load** — pydantic models (frozen, `extra="forbid"`) catch typos, resolve
-  repo-relative paths, and cross-check that every dataset's genome build has a reference FASTA.
-- **Embarrassingly parallel** — `submit` fans the matrix out as a SLURM array (one GPU each);
-  each job is a picklable, standalone unit that writes a durable result sidecar.
-- **Crash-tolerant aggregation** — `collect` reads the sidecars, so it runs in a separate
-  process from the submitter and tolerates partial / errored runs.
+- **Config-driven matrix** — the 54-job matrix, paths, model conventions, and cluster
+  parameters live in `config/eval.yaml`.
+- **Four CLI subcommands** — `dry-run`, `submit`, `collect`, and `plot`.
+- **Validation on load** — pydantic models (frozen, `extra="forbid"`) catch typos, resolve
+  repo-relative paths, and check that every dataset's genome build has a reference FASTA.
+- **SLURM array submission** — `submit` fans the matrix out as a SLURM array (one GPU per
+  job); each job is a picklable, standalone unit that writes a result sidecar.
+- **Decoupled aggregation** — `collect` reads the sidecars, so it runs in a separate process
+  from the submitter and handles partial or errored runs.
 - **Five models, two scoring families** — BPNet-like (ChromBPNet, Cherimoya) and many-tracks
   (AlphaGenome, Enformer, Borzoi), dispatched by a per-spec `kind`.
 
