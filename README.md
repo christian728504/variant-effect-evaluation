@@ -68,7 +68,6 @@ the YAML on the shared filesystem is the single source of truth end-to-end.
 > [!NOTE]
 > The model library and its dependencies (cherimoya, alphagenome-pytorch, borzoi-pytorch,
 > enformer-pytorch, bpnet-lite) are pinned git sources, re-declared in `[tool.uv.sources]`.
-> Resolving them needs SSH access to the `variant-effect-prediction` repo.
 
 ## Getting started
 
