@@ -1,12 +1,11 @@
 """submitit orchestration for the Stage 4 benchmark matrix (gpuh200).
 
-One SLURM job per (dataset, model, accession, assay) across the datasets in
-`bench_config.DATASET_MODEL_PLANS`. All SLURM parameters are
-*derived* from the cluster introspection (the user's proven-working `srun`),
-not hardcoded magic: gpuh200 has 8 H200s / 256 CPU / 1 TB on one node, so one GPU's
-fair share is 32 CPU + 125 GB; the directives below match the user's proven-working
-`srun` (`--gres=gpu:1 --cpus-per-task=32 --mem=125000MB`). `--gpu-freq` is deprecated
-on this SLURM (21.08.5) and is intentionally not set.
+One SLURM job per (dataset, model, accession, assay) across the datasets' plans in
+`config/eval.yaml`. All SLURM parameters come from that file's `cluster.slurm` section,
+derived from the cluster introspection (the user's proven-working `srun`): gpuh200 has
+8 H200s / 256 CPU / 1 TB on one node, so one GPU's fair share is 32 CPU + 125 GB; the
+directives match the proven-working `srun` (`--gres=gpu:1 --cpus-per-task=32
+--mem=125000MB`). `--gpu-freq` is deprecated on this SLURM (21.08.5) and is not set.
 
 Usage:
     python scripts/orchestrate.py --list      # print the job matrix, submit nothing
@@ -31,33 +30,34 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from loguru import logger
 
-from bench_config import (
-    LOGS_DIR,
-    PROJECT_ROOT,
-    RESULTS_DIR,
-    configure_logging,
-    iter_jobs,
-    job_stem,
-)
+from config import load_config
+from utils import configure_logging, iter_jobs, job_stem
 from benchmark_job import run_single_benchmark
 
-# --- Derived SLURM config (see resources/context/cluster-introspection.md) ---
-PARTITION = "gpuh200"  # only GPU/H200 partition; user decision
-GRES = "gpu:1"  # GRES is gpu:8 (no type sublabel) → request one GPU
-CPUS_PER_TASK = 32  # 256 CPU ÷ 8 GPU
-MEM = "125000MB"  # 1 TB ÷ 8 GPU ≈ 125 GB (matches running job's AllocMem)
-TIME_MIN = 720  # 12 h; ample for the slowest many-tracks run, << 14-day cap
-ARRAY_PARALLELISM = 8  # use all 8 GPUs; user decision
-JOB_NAME = "vep_bench"
+# Declarative config (paths + matrix + cluster params) from config/eval.yaml.
+CFG = load_config()
+_SLURM = CFG.cluster.slurm
+PROJECT_ROOT = CFG.paths.project_root
+RESULTS_DIR = CFG.paths.results
+LOGS_DIR = CFG.paths.logs
 
-SCRIPTS_DIR = Path(__file__).resolve().parent  # dir holding bench_config/benchmark_job
-PYTHON = str(PROJECT_ROOT / ".venv" / "bin" / "python")  # uv venv launcher
+# --- SLURM config (from cluster.slurm; see resources/context/cluster-introspection.md) ---
+PARTITION = _SLURM.partition
+GRES = _SLURM.gres
+CPUS_PER_TASK = _SLURM.cpus_per_task
+MEM = _SLURM.mem
+TIME_MIN = _SLURM.time_min
+ARRAY_PARALLELISM = _SLURM.array_parallelism
+JOB_NAME = _SLURM.job_name
+
+SCRIPTS_DIR = Path(__file__).resolve().parent  # dir holding config/utils/benchmark_job
+PYTHON = str(PROJECT_ROOT / CFG.cluster.executor.venv_python)  # uv venv launcher
 SLURM_FOLDER = LOGS_DIR / "slurm"
 MANIFEST = SLURM_FOLDER / "submitted_jobs.json"
 ALL_BENCH = RESULTS_DIR / "all_benchmarks.parquet"
 
 # The single job used for the end-to-end dry run (smallest, BPNet-like, no assay).
-DRY_RUN_JOB = ("caqtls_microglia", "cherimoya", "microglia", "NA")
+DRY_RUN_JOB = tuple(CFG.cluster.executor.dry_run_job)
 
 # Columns of the aggregated all_benchmarks.parquet (§8), in order.
 RESULT_COLUMNS = [
@@ -85,7 +85,7 @@ def build_executor():
         time=TIME_MIN,
         array_parallelism=ARRAY_PARALLELISM,
         job_name=JOB_NAME,
-        # Make benchmark_job / bench_config importable on the compute node.
+        # Make config / utils / benchmark_job importable on the compute node.
         setup=[f"export PYTHONPATH={SCRIPTS_DIR}:$PYTHONPATH"],
         stderr_to_stdout=False,
     )
@@ -143,7 +143,7 @@ JOB_COLUMNS = ("job_id", "dataset", "model", "accession", "assay")
 
 
 def cmd_list() -> None:
-    jobs = iter_jobs()
+    jobs = iter_jobs(CFG)
     _log_table(
         f"Stage 4 job matrix — {len(jobs)} jobs",
         JOB_COLUMNS,
@@ -249,14 +249,14 @@ def _submit_and_record(jobs_spec, *, title: str, merge_manifest: bool = False) -
 
 def cmd_submit() -> None:
     """Batch-submit the full matrix as a SLURM array (fire-and-forget) + manifest."""
-    _submit_and_record(iter_jobs(), title=f"Submitted full matrix to {PARTITION}")
+    _submit_and_record(iter_jobs(CFG), title=f"Submitted full matrix to {PARTITION}")
 
 
 def cmd_resubmit_missing() -> None:
     """Submit only the jobs whose result sidecar is absent (e.g. after an OOM)."""
     missing = [
         (d, m, a, asy)
-        for (d, m, a, asy) in iter_jobs()
+        for (d, m, a, asy) in iter_jobs(CFG)
         if not (RESULTS_DIR / f"{job_stem(d, m, a, asy)}.result.json").exists()
     ]
     logger.info("{} job(s) missing a result sidecar.", len(missing))

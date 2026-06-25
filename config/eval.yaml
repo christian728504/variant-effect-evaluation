@@ -1,0 +1,234 @@
+# Declarative definition of the Stage 4 benchmark matrix + cluster parameters.
+# Parsed and validated by scripts/config.py (pydantic v2); the logic that consumes
+# it lives in scripts/utils.py. All paths are repo-relative: project_root is derived
+# from this file's location (config/ sits directly under the repo root).
+
+paths:
+  data_dir: data
+  results_dir: results
+  logs_dir: logs
+  qtl_subdir: qtl                # under data_dir
+  weights_subdir: weights        # under data_dir
+  references_subdir: references   # under data_dir
+  metadata_subdir: metadata      # under data_dir
+  # genome build -> FASTA path under <data_dir>/<references_subdir>. Both are UCSC
+  # chr1-named, bgzip + faidx indexed; a dataset selects its build via genome_build.
+  ref_fastas:
+    GRCh38: GRCh38/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta.gz
+    GRCh37: GRCh37/GCF_000001405.25_GRCh37.p13_genomic.fa.gz
+
+# Per-model construction conventions (the build_scorer logic in utils.py reads these).
+models:
+  # Cherimoya .torch dirs for non-ENCODE models, keyed by pseudo-accession; the
+  # dir is taken under <weights>/cherimoya/models/. ENCODE accessions map to themselves.
+  cherimoya_celltype_dirs:
+    microglia: Microglia
+    esan: Esan
+    gambian: Gambian
+    luhya: Luhya
+    maasai: Maasai
+    mende: Mende
+    yoruba: Yoruba
+  # ChromBPNet (TF/h5) model dirs (models/fold_N/*.h5), as subpaths under
+  # <weights>/chrombpnet/. Membership here selects the h5-folds branch; ENCODE
+  # accessions (not listed) fall through to the tar-discovery branch.
+  chrombpnet_celltype_dirs:
+    microglia: microglia/models
+    esan: afgr/Esan/models
+    gambian: afgr/Gambian/models
+    luhya: afgr/Luhya/models
+    maasai: afgr/Maasai/models
+    mende: afgr/Mende/models
+    yoruba: afgr/Yoruba/models
+  # Long sequences make many-tracks activations huge; cap batch even on a 140 GB H200.
+  many_tracks_batch:
+    enformer: 2
+    borzoi: 2
+    alphagenome: 1
+  # Weights paths under <weights>/ for each many-tracks / cherimoya model.
+  weights_subdirs:
+    enformer: enformer-pytorch
+    borzoi: borzoi-pytorch
+    alphagenome: alphagenome-pytorch/model_all_folds.safetensors
+    cherimoya: cherimoya/models
+
+# The benchmark datasets. Each `plan` enumerates every (model, accession, assay) job
+# that scores the dataset. BPNet-like + AlphaGenome use the assay-matched accession
+# (ATAC); Enformer/Borzoi have no ATAC track so they use the DNase accession as a
+# proxy. African caQTLs additionally get the 6 AFGR ChromBPNet + Cherimoya models.
+datasets:
+  caqtls_eu:
+    key: caqtls_eu
+    filename: caqtls.eu.lcls.benchmarking.all.tsv
+    chrom_col: var.chr
+    pos_col: var.pos_hg38
+    allele1_col: var.allele1
+    allele2_col: var.allele2
+    effect_size_col: obs.beta
+    pvalue_col: obs.pval
+    isused_col: var.isused
+    source_assay: ATAC
+    genome_build: GRCh38
+    significance_neglog10p: 6.0
+    notes: "European LCL ATAC caQTLs; significant = -log10(p)>6."
+    plan:
+      - {model: chrombpnet,  accession: ENCSR637XSC, assay: ATAC}
+      - {model: cherimoya,   accession: ENCSR637XSC, assay: ATAC}
+      - {model: alphagenome, accession: ENCSR637XSC, assay: ATAC}
+      - {model: chrombpnet,  accession: ENCSR000EMT, assay: DNASE}
+      - {model: cherimoya,   accession: ENCSR000EMT, assay: DNASE}
+      - {model: alphagenome, accession: ENCSR000EMT, assay: DNASE}
+      - {model: enformer,    accession: ENCSR000EMT, assay: DNASE}
+      - {model: borzoi,      accession: ENCSR000EMT, assay: DNASE}
+
+  caqtls_african:
+    key: caqtls_african
+    filename: caqtls.african.lcls.benchmarking.all.tsv
+    chrom_col: var.chr
+    pos_col: var.pos_hg38
+    allele1_col: var.allele1
+    allele2_col: var.allele2
+    effect_size_col: obs.beta
+    pvalue_col: obs.pval
+    isused_col: var.isused
+    source_assay: ATAC
+    genome_build: GRCh38
+    significance_neglog10p: 5.0
+    notes: "African LCL ATAC caQTLs; significant = -log10(p)>5."
+    plan:
+      - {model: chrombpnet,  accession: ENCSR637XSC, assay: ATAC}
+      - {model: cherimoya,   accession: ENCSR637XSC, assay: ATAC}
+      - {model: alphagenome, accession: ENCSR637XSC, assay: ATAC}
+      - {model: chrombpnet,  accession: ENCSR000EMT, assay: DNASE}
+      - {model: cherimoya,   accession: ENCSR000EMT, assay: DNASE}
+      - {model: alphagenome, accession: ENCSR000EMT, assay: DNASE}
+      - {model: enformer,    accession: ENCSR000EMT, assay: DNASE}
+      - {model: borzoi,      accession: ENCSR000EMT, assay: DNASE}
+      - {model: chrombpnet,  accession: esan,    assay: ATAC}
+      - {model: chrombpnet,  accession: gambian, assay: ATAC}
+      - {model: chrombpnet,  accession: luhya,   assay: ATAC}
+      - {model: chrombpnet,  accession: maasai,  assay: ATAC}
+      - {model: chrombpnet,  accession: mende,   assay: ATAC}
+      - {model: chrombpnet,  accession: yoruba,  assay: ATAC}
+      - {model: cherimoya,   accession: esan,    assay: ATAC}
+      - {model: cherimoya,   accession: gambian, assay: ATAC}
+      - {model: cherimoya,   accession: luhya,   assay: ATAC}
+      - {model: cherimoya,   accession: maasai,  assay: ATAC}
+      - {model: cherimoya,   accession: mende,   assay: ATAC}
+      - {model: cherimoya,   accession: yoruba,  assay: ATAC}
+
+  asb_african:
+    key: asb_african
+    filename: caqtls.african.lcls.asb.benchmarking.all.tsv
+    chrom_col: var.chr
+    pos_col: var.pos_hg38
+    allele1_col: allele1   # ASB file drops the var. prefix on alleles
+    allele2_col: allele2
+    effect_size_col: obs.meanLog2FC
+    pvalue_col: null
+    isused_col: var.isused
+    source_assay: ATAC
+    genome_build: GRCh38
+    significance_neglog10p: null   # all rows already significant ASB sites
+    notes: "African LCL allele-specific binding; all rows pre-significant."
+    plan:
+      - {model: chrombpnet,  accession: ENCSR637XSC, assay: ATAC}
+      - {model: cherimoya,   accession: ENCSR637XSC, assay: ATAC}
+      - {model: alphagenome, accession: ENCSR637XSC, assay: ATAC}
+      - {model: chrombpnet,  accession: ENCSR000EMT, assay: DNASE}
+      - {model: cherimoya,   accession: ENCSR000EMT, assay: DNASE}
+      - {model: alphagenome, accession: ENCSR000EMT, assay: DNASE}
+      - {model: enformer,    accession: ENCSR000EMT, assay: DNASE}
+      - {model: borzoi,      accession: ENCSR000EMT, assay: DNASE}
+
+  caqtls_microglia:
+    key: caqtls_microglia
+    filename: caqtls.microglia.benchmarking.all.tsv
+    chrom_col: var.chr
+    pos_col: var.pos_hg38
+    # obs.Beta is signed in the var.allele1 direction (opposite of the caQTL LCL
+    # obs.beta convention), so allele1/allele2 are swapped — same flip as
+    # dsqtls_yoruba. Matches the file's published logFC + the paper's r=0.6
+    # (Fig. 6j): signed corr is +0.60, not -0.60.
+    allele1_col: var.allele2
+    allele2_col: var.allele1
+    effect_size_col: obs.Beta
+    pvalue_col: obs.Z_score_fixed
+    isused_col: var.isused
+    source_assay: scATAC
+    genome_build: GRCh38
+    significance_neglog10p: null   # all rows already significant caQTLs
+    notes: "Microglia scATAC caQTLs; all rows pre-significant; BPNet-like only."
+    plan:
+      - {model: chrombpnet, accession: microglia, assay: null}
+      - {model: cherimoya,  accession: microglia, assay: null}
+
+  # dsQTL/bQTL are GM12878 LCL datasets (GRCh37) — same biosample as caqtls_eu, so
+  # the same 8-model plan applies (ATAC ENCSR637XSC + DNase ENCSR000EMT).
+  dsqtls_yoruba:
+    key: dsqtls_yoruba
+    filename: dsqtls.yoruba.lcls.benchmarking.all.tsv
+    chrom_col: var.chr
+    pos_col: var.pos_hg19
+    # obs.estimate is signed in the var.allele1 direction (opposite of the caQTL
+    # obs.beta convention), so allele1/allele2 are swapped to match the pipeline's
+    # logFC=log2(allele2/allele1): with var.allele2 as the ref-like allele, signed
+    # corr matches the file's published logFC (+0.75, not -0.75).
+    allele1_col: var.allele2
+    allele2_col: var.allele1
+    effect_size_col: obs.estimate
+    pvalue_col: null
+    isused_col: var.isused
+    source_assay: DNASE
+    genome_build: GRCh37
+    significance_label_col: obs.label   # 1 = significant, -1 = control
+    notes: "Yoruban LCL dsQTLs (GRCh37); significant = obs.label==1 (~560 positives)."
+    plan:
+      - {model: chrombpnet,  accession: ENCSR637XSC, assay: ATAC}
+      - {model: cherimoya,   accession: ENCSR637XSC, assay: ATAC}
+      - {model: alphagenome, accession: ENCSR637XSC, assay: ATAC}
+      - {model: chrombpnet,  accession: ENCSR000EMT, assay: DNASE}
+      - {model: cherimoya,   accession: ENCSR000EMT, assay: DNASE}
+      - {model: alphagenome, accession: ENCSR000EMT, assay: DNASE}
+      - {model: enformer,    accession: ENCSR000EMT, assay: DNASE}
+      - {model: borzoi,      accession: ENCSR000EMT, assay: DNASE}
+
+  bqtls_pu1:
+    key: bqtls_pu1
+    filename: bqtls.pu1.lcls.benchmarking.all.tsv
+    chrom_col: var.chr
+    pos_col: var.pos_hg19
+    allele1_col: var.POSTallele   # POST = reference-like allele
+    allele2_col: var.ALTallele
+    effect_size_col: obs.chiplogratio
+    pvalue_col: obs.pval
+    isused_col: var.isused
+    source_assay: ATAC
+    genome_build: GRCh37
+    significance_neglog10p: 4.0
+    notes: "PU1/SPI1 bQTLs (GRCh37); significant = -log10(obs.pval)>4."
+    plan:
+      - {model: chrombpnet,  accession: ENCSR637XSC, assay: ATAC}
+      - {model: cherimoya,   accession: ENCSR637XSC, assay: ATAC}
+      - {model: alphagenome, accession: ENCSR637XSC, assay: ATAC}
+      - {model: chrombpnet,  accession: ENCSR000EMT, assay: DNASE}
+      - {model: cherimoya,   accession: ENCSR000EMT, assay: DNASE}
+      - {model: alphagenome, accession: ENCSR000EMT, assay: DNASE}
+      - {model: enformer,    accession: ENCSR000EMT, assay: DNASE}
+      - {model: borzoi,      accession: ENCSR000EMT, assay: DNASE}
+
+# Cluster / SlurmExecutor parameters (was hardcoded in orchestrate.py). Derived from
+# the cluster introspection: gpuh200 = 8 H200 / 256 CPU / 1 TB on one node, so one
+# GPU's fair share is 32 CPU + 125 GB.
+cluster:
+  slurm:
+    partition: gpuh200
+    gres: "gpu:1"
+    cpus_per_task: 32
+    mem: "125000MB"          # string — SLURM needs the unit suffix
+    time_min: 720            # 12 h; ample for the slowest run, << 14-day cap
+    array_parallelism: 8     # use all 8 GPUs
+    job_name: vep_bench
+  executor:
+    venv_python: ".venv/bin/python"   # repo-relative; resolved against project_root
+    dry_run_job: [caqtls_microglia, cherimoya, microglia, "NA"]

@@ -25,15 +25,13 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-# Make bench_config importable for standalone runs regardless of CWD.
+# Make config / utils importable for standalone runs regardless of CWD.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from loguru import logger
 
-from bench_config import (
-    DATASETS,
-    LOGS_DIR,
-    RESULTS_DIR,
+from config import load_config
+from utils import (
     build_scorer,
     build_variant_set,
     compute_metrics,
@@ -87,10 +85,15 @@ def run_single_benchmark(
     """
     t0 = time.perf_counter()
     configure_logging()
+    # Load the declarative config on the compute node (the YAML travels with the repo on
+    # the shared filesystem); nothing config-related is pickled into this function.
+    cfg = load_config()
+    results_dir = cfg.paths.results
+    logs_dir = cfg.paths.logs
     assay_norm = None if assay in (None, "", "NA") else assay
     stem = job_stem(dataset, model, accession, assay)
-    state_log_path = LOGS_DIR / f"{stem}.state.log"
-    result_parquet = RESULTS_DIR / f"{stem}.parquet"
+    state_log_path = logs_dir / f"{stem}.state.log"
+    result_parquet = results_dir / f"{stem}.parquet"
 
     started_utc = datetime.now(timezone.utc).isoformat()
     result: dict = {
@@ -122,10 +125,17 @@ def run_single_benchmark(
             torch.cuda.get_device_name() if torch.cuda.is_available() else "<cpu>"
         )
 
-        ds = DATASETS[dataset]
-        rg = ref_genome(ds.genome_build)
-        vs = build_variant_set(ds)
-        scorer = build_scorer(model, accession, assay_norm, rg)
+        ds = cfg.datasets[dataset]
+        spec = next(
+            s
+            for s in ds.plan
+            if s.model == model
+            and s.accession == accession
+            and (s.assay or "NA") == (assay or "NA")
+        )
+        rg = ref_genome(cfg, ds.genome_build)
+        vs = build_variant_set(ds, cfg)
+        scorer = build_scorer(spec, cfg, rg)
 
         header = {
             "dataset": dataset,
@@ -140,7 +150,7 @@ def run_single_benchmark(
         }
         _emit_state_report(header, vs, scorer)
 
-        RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+        results_dir.mkdir(parents=True, exist_ok=True)
         score_df = scorer.score(vs)
         score_df.write_parquet(result_parquet)
 
@@ -171,8 +181,8 @@ def run_single_benchmark(
         try:
             import json
 
-            RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-            with open(RESULTS_DIR / f"{stem}.result.json", "w") as fh:
+            results_dir.mkdir(parents=True, exist_ok=True)
+            with open(results_dir / f"{stem}.result.json", "w") as fh:
                 json.dump(result, fh, indent=2)
         except Exception:
             pass
