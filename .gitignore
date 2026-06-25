@@ -1,0 +1,11 @@
+# Eval inputs (a ~13 GB copied subset) and outputs are not tracked.
+data/
+results/
+logs/
+
+# Python / uv
+.venv/
+__pycache__/
+*.pyc
+.ruff_cache/
+.pytest_cache/
