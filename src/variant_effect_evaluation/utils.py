@@ -144,45 +144,6 @@ def track_indices_for(model: str, accession: str, assay: str | None = None) -> l
     return idx
 
 
-def _find_chrombpnet_model_tar(cfg: EvalConfig, accession: str, max_members_per_tar: int = 12):
-    """Find the tar archive holding the model h5s for an ENCODE ChromBPNet accession.
-
-    Iterates tar members lazily (gzip needs sequential decompression), breaking as soon as
-    a `model.bias_scaled` entry appears. The resolved path is cached to JSON.
-    """
-    import json
-    import tarfile
-    from pathlib import Path
-
-    cache_path = cfg.paths.metadata / "chrombpnet-model-tars.json"
-    cache: dict[str, str] = {}
-    if cache_path.exists():
-        cache = json.loads(cache_path.read_text())
-        if accession in cache and Path(cache[accession]).exists():
-            return Path(cache[accession])
-
-    acc_dir = cfg.paths.weights / cfg.models.weights_subdirs["chrombpnet"] / accession
-    found: Path | None = None
-    for tar in sorted(acc_dir.glob("*.tar.gz")):
-        with tarfile.open(tar, "r:*") as tf:
-            for i, member in enumerate(tf):
-                if "model.bias_scaled" in member.name:
-                    found = tar
-                    break
-                if i >= max_members_per_tar:
-                    break
-        if found is not None:
-            break
-
-    if found is None:
-        raise FileNotFoundError(f"no ChromBPNet model tar found under {acc_dir}")
-
-    cache[accession] = str(found)
-    cache_path.parent.mkdir(parents=True, exist_ok=True)
-    cache_path.write_text(json.dumps(cache, indent=2))
-    return found
-
-
 def _tag(scorer, *, accession: str, assay: str | None, track_indices=None, weights_path=None):
     """Attach repr-only reporting attrs (Stage 4 §7) and return the scorer."""
     scorer.accession = accession
@@ -201,38 +162,32 @@ def build_scorer(spec: ModelSpec, cfg: EvalConfig, ref_genome, **kw):
     carries repr-only `accession`/`assay_type`/`track_indices`/`weights_path` attrs.
     """
     if spec.kind == "chrombpnet":
-        return _build_chrombpnet(spec.accession, spec.assay, cfg, ref_genome, **kw)
+        from variant_effect_prediction.scorers import ChromBPNetVariantScorer
+
+        return _build_folded("chrombpnet", spec, cfg, ref_genome, ChromBPNetVariantScorer, **kw)
     if spec.kind == "cherimoya":
-        return _build_cherimoya(spec.accession, spec.assay, cfg, ref_genome, **kw)
+        from variant_effect_prediction.scorers import CherimoyaVariantScorer
+
+        return _build_folded("cherimoya", spec, cfg, ref_genome, CherimoyaVariantScorer, **kw)
     if spec.kind == "many_tracks":
         return _build_many_tracks(spec.model, spec.accession, spec.assay, cfg, ref_genome, **kw)
     raise ValueError(f"unknown scorer kind {spec.kind!r}")
 
 
-def _build_chrombpnet(accession: str, assay: str | None, cfg: EvalConfig, rg, **kw):
+def _build_folded(model: str, spec: ModelSpec, cfg: EvalConfig, rg, scorer_cls, **kw):
+    """Build a BPNet-like scorer (chrombpnet/cherimoya) from a per-fold `.torch` dir.
+
+    Both families share the `<weights>/<model>/<celltype-dir>/fold_{i}.torch` layout, loaded
+    by `FoldedModelWeights.from_dir`. `celltype_dirs` maps pseudo-accessions (microglia / AFGR
+    populations) to their subpath; ENCODE accessions are absent and map to themselves.
+    """
     from variant_effect_prediction import FoldedModelWeights
-    from variant_effect_prediction.scorers import ChromBPNetVariantScorer
 
-    root = cfg.paths.weights / cfg.models.weights_subdirs["chrombpnet"]
-    subpath = cfg.models.chrombpnet_celltype_dirs.get(accession)
-    if subpath is not None:  # primary-cell / AFGR syn h5 folds
-        fw = FoldedModelWeights.from_chrombpnet_h5_folds(root / subpath)
-    else:  # ENCODE tar (bias + nobias h5 blobs)
-        tar = _find_chrombpnet_model_tar(cfg, accession)
-        fw = FoldedModelWeights.from_chrombpnet_tar(tar, eid=accession)
-    scorer = ChromBPNetVariantScorer(folded_weights=fw, ref_genome=rg, **kw)
-    return _tag(scorer, accession=accession, assay=assay)
-
-
-def _build_cherimoya(accession: str, assay: str | None, cfg: EvalConfig, rg, **kw):
-    from variant_effect_prediction import FoldedModelWeights
-    from variant_effect_prediction.scorers import CherimoyaVariantScorer
-
-    dir_name = cfg.models.cherimoya_celltype_dirs.get(accession, accession)
-    weights_dir = cfg.paths.weights / cfg.models.weights_subdirs["cherimoya"] / dir_name
-    fw = FoldedModelWeights.from_cherimoya_dir(weights_dir)
-    scorer = CherimoyaVariantScorer(folded_weights=fw, ref_genome=rg, **kw)
-    return _tag(scorer, accession=accession, assay=assay, weights_path=weights_dir)
+    dir_name = cfg.models.celltype_dirs.get(spec.accession, spec.accession)
+    weights_dir = cfg.paths.weights / cfg.models.weights_subdirs[model] / dir_name
+    fw = FoldedModelWeights.from_dir(weights_dir)
+    scorer = scorer_cls(folded_weights=fw, ref_genome=rg, **kw)
+    return _tag(scorer, accession=spec.accession, assay=spec.assay, weights_path=weights_dir)
 
 
 def _build_many_tracks(model: str, accession: str, assay: str | None, cfg: EvalConfig, rg, **kw):

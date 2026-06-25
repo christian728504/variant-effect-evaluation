@@ -17,6 +17,7 @@ rather than crashing the collector.
 
 from __future__ import annotations
 
+import json
 import os
 import socket
 import time
@@ -174,8 +175,6 @@ def run_single_benchmark(
         # process boundaries (no need to hold submitit Job objects), and captures
         # error rows too. Written last so it reflects the final status + wall time.
         try:
-            import json
-
             results_dir.mkdir(parents=True, exist_ok=True)
             with open(results_dir / f"{stem}.result.json", "w") as fh:
                 json.dump(result, fh, indent=2)

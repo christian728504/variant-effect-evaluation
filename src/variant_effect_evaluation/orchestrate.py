@@ -1,16 +1,10 @@
-"""submitit orchestration for the Stage 4 benchmark matrix (gpuh200).
+"""submitit orchestration for the benchmark matrix (gpuh200).
 
-One SLURM job per (dataset, model, accession, assay) across the datasets' plans in
-`config/eval.yaml`. All SLURM parameters come from that file's `cluster.slurm` section,
-derived from the cluster introspection (the user's proven-working `srun`): gpuh200 has
-8 H200s / 256 CPU / 1 TB on one node, so one GPU's fair share is 32 CPU + 125 GB; the
-directives match the proven-working `srun` (`--gres=gpu:1 --cpus-per-task=32
---mem=125000MB`). `--gpu-freq` is deprecated on this SLURM (21.08.5) and is not set.
-
-These command functions are cfg-parametrized and driven by the CLI (`cli.py`):
-`cmd_dry_run` enumerates the matrix and submits nothing; `cmd_submit` fires the full
-array + writes a manifest; `cmd_collect` aggregates the durable `<stem>.result.json`
-sidecars each job writes (so it runs in a separate process from the submitter).
+One SLURM job per (dataset, model, accession, assay) from the datasets' plans; all
+cluster parameters come from `config/eval.yaml`. Driven by the CLI: `cmd_dry_run`
+enumerates the matrix and submits nothing, `cmd_submit` fires the full array + writes a
+manifest, `cmd_collect` aggregates the durable `<stem>.result.json` sidecars each job
+writes (so it runs in a separate process from the submitter).
 """
 
 from __future__ import annotations
@@ -49,7 +43,7 @@ def _manifest(cfg: EvalConfig) -> Path:
 def build_executor(cfg: EvalConfig):
     """SlurmExecutor for one-GPU gpuh200 jobs; params from `cfg.cluster.slurm`.
 
-    The job array launches via the repo-relative venv python from `cfg.cluster.executor`;
+    The job array launches via the repo-relative venv python from `cfg.cluster`;
     the package is installed (editable) in that shared-FS venv, so `run_single_benchmark`
     imports natively on the compute node — no PYTHONPATH shim needed.
     """
@@ -58,7 +52,7 @@ def build_executor(cfg: EvalConfig):
     slurm = cfg.cluster.slurm
     folder = _slurm_folder(cfg)
     folder.mkdir(parents=True, exist_ok=True)
-    python = str(cfg.paths.project_root / cfg.cluster.executor.venv_python)
+    python = str(cfg.paths.project_root / cfg.cluster.venv_python)
     ex = submitit.SlurmExecutor(folder=str(folder), python=python)
     ex.update_parameters(
         partition=slurm.partition,

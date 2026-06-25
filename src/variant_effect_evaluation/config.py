@@ -38,7 +38,6 @@ class Paths(BaseModel):
     qtl_subdir: str = "qtl"
     weights_subdir: str = "weights"
     references_subdir: str = "references"
-    metadata_subdir: str = "metadata"
     ref_fastas: dict[str, str]
     project_root: Path | None = None
 
@@ -65,10 +64,6 @@ class Paths(BaseModel):
     @property
     def references(self) -> Path:
         return self.data / self.references_subdir
-
-    @property
-    def metadata(self) -> Path:
-        return self.data / self.metadata_subdir
 
     @property
     def ref_fasta_paths(self) -> dict[str, Path]:
@@ -124,8 +119,7 @@ class ModelConventions(BaseModel):
 
     model_config = _FROZEN
 
-    cherimoya_celltype_dirs: dict[str, str]
-    chrombpnet_celltype_dirs: dict[str, str]
+    celltype_dirs: dict[str, str]
     many_tracks_batch: dict[str, int]
     weights_subdirs: dict[str, str]
 
@@ -142,18 +136,11 @@ class SlurmConfig(BaseModel):
     job_name: str
 
 
-class ExecutorConfig(BaseModel):
-    model_config = _FROZEN
-
-    venv_python: str = ".venv/bin/python"  # repo-relative; resolved against project_root
-    dry_run_job: tuple[str, str, str, str]
-
-
 class ClusterConfig(BaseModel):
     model_config = _FROZEN
 
     slurm: SlurmConfig
-    executor: ExecutorConfig
+    venv_python: str = ".venv/bin/python"  # repo-relative; resolved against project_root
 
 
 class EvalConfig(BaseModel):

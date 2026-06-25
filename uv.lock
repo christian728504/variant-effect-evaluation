@@ -97,8 +97,8 @@ dbapi = [
 
 [[package]]
 name = "alphagenome-pytorch"
-version = "0.3.2.dev26+gbfa6b9bb0"
-source = { git = "https://github.com/genomicsxai/alphagenome-pytorch.git#bfa6b9bb03a48bb4f0fc5416ed631156660db234" }
+version = "0.3.2.dev28+gadc9226f7"
+source = { git = "https://github.com/genomicsxai/alphagenome-pytorch.git#adc9226f7c484393717d1c3dc92c8beb156bb846" }
 dependencies = [
     { name = "numpy" },
     { name = "safetensors" },
@@ -1304,9 +1304,33 @@ wheels = [
 [[package]]
 name = "liftover"
 version = "1.4.0"
-source = { git = "https://github.com/jeremymcrae/liftover.git#1926c4d3097ce36a0f09254c4a09d8b678a5ea82" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "urllib3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f4/4b/9817be591e1d9941ad14f7eb4890b7d8cfc201c6d47cb0da11118ef2e741/liftover-1.4.0.tar.gz", hash = "sha256:2caac38bd30ef7b4b24a9606a20f615a479d25d66de21b9a6369a41f87d86ca0", size = 231934, upload-time = "2026-04-18T01:45:45.864Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/30/3a/dbaf74407cd9ecfb86c3fd1f775d0fd76e3922e08abb5542732d96fde05c/liftover-1.4.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:b1adff06c84717426866e9790097dbf88ee90d8c7294fdf651e2c0adc43a048b", size = 151640, upload-time = "2026-04-18T01:44:55.6Z" },
+    { url = "https://files.pythonhosted.org/packages/42/c3/e2709c5777178ee72d8ca5e548d35dada96b643f18dee5215e119c77b0dd/liftover-1.4.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:822967cbf4e1d9bd38acca28b13517f6e9d9d92ab2be71846cfb8af3674aed62", size = 1138052, upload-time = "2026-04-18T01:44:57.256Z" },
+    { url = "https://files.pythonhosted.org/packages/e2/2b/563790d2ac71cf8fa003b720429782468601e0302c912a078e3f2302a15e/liftover-1.4.0-cp312-cp312-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:50ca1f40dd1b3396152c7bd018b37624662694087a2ead6b262f7d65e0dadc53", size = 1007446, upload-time = "2026-04-18T01:44:58.961Z" },
+    { url = "https://files.pythonhosted.org/packages/f9/9b/2a5e2f8c0f3926287faefaf3a1ff57063d731e6b28bd0baae31a49631b47/liftover-1.4.0-cp312-cp312-musllinux_1_2_aarch64.whl", hash = "sha256:6b33ac5e587525ded2a004ccec170cd59ed802000ea82a1e12401bcbc79e0b69", size = 1961586, upload-time = "2026-04-18T01:45:00.411Z" },
+    { url = "https://files.pythonhosted.org/packages/e3/bf/bbaba897adfcee4515597c43478a3c851ea56ccd64bc4128e86b223ba1d5/liftover-1.4.0-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:8e1b78d4ca2ecf23ab9f5356d53cc57af57e428791e218c2ac3537d840870dc2", size = 2050805, upload-time = "2026-04-18T01:45:02.235Z" },
+    { url = "https://files.pythonhosted.org/packages/98/15/22de206642a67186e946b6a5b75494ea83cb4216115c8c17725c74d43675/liftover-1.4.0-cp312-cp312-win32.whl", hash = "sha256:d06c0d4f411ca7650a13c74bcd4513007377b444f3790c80ab675ab8a69856bb", size = 173923, upload-time = "2026-04-18T01:45:03.791Z" },
+    { url = "https://files.pythonhosted.org/packages/b3/44/70377176b812605d624850421b428eec16284a113967b2ea6544d4ea3ee4/liftover-1.4.0-cp312-cp312-win_amd64.whl", hash = "sha256:9079fe64b31d986821332d4c6c7c5ca3596d95efb5288a2985465a5c892e617a", size = 182745, upload-time = "2026-04-18T01:45:04.865Z" },
+    { url = "https://files.pythonhosted.org/packages/91/c0/8fc90986090762b02fccd536d34498ad305b9dffbcf0a24b2df82b1e8cf7/liftover-1.4.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:972ec50521f840370fd48ee9ec2a3ba3fa13f57fce2325abec0a5d98c822fc6f", size = 151241, upload-time = "2026-04-18T01:45:05.952Z" },
+    { url = "https://files.pythonhosted.org/packages/44/ae/8f362413b859a0afc8b6fbb2872c921d9ab7f310423491d5b3ea0a5495f9/liftover-1.4.0-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:d7dc966468c08d45d6bcb7cb55077ba1c212651bec51020b79d23be492c73856", size = 1140035, upload-time = "2026-04-18T01:45:07.203Z" },
+    { url = "https://files.pythonhosted.org/packages/d8/9b/e462ecca1e994c33dcedf35688e1c6b2969815f92d1b56dae53320f107fe/liftover-1.4.0-cp313-cp313-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:de395ee4a843fc94df60a30516c114163ea0a3ad813ba3dfeae6c9a9dcda2eec", size = 1000760, upload-time = "2026-04-18T01:45:08.927Z" },
+    { url = "https://files.pythonhosted.org/packages/53/fd/d5009bac6df53ce0ab235bb09127fc3b5fb8e062a4753a83774409cc8c8f/liftover-1.4.0-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:94906ccaa83348c9996e283e20a9c33ff98368f1d11e6d087f05d86223246f27", size = 1956672, upload-time = "2026-04-18T01:45:10.326Z" },
+    { url = "https://files.pythonhosted.org/packages/4f/36/21ac3a108e7f902cfbe32319c866299f3580faa744ccce6d7e9f4ae5e07d/liftover-1.4.0-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:e34972f5434809880361d582fc08852eaf742be090d673b9a180e22e1a2550df", size = 2045615, upload-time = "2026-04-18T01:45:11.81Z" },
+    { url = "https://files.pythonhosted.org/packages/cf/d1/e54d9294bcfdf3a7b683e25786c160cf186ca8d6a3a567d500e2f430caf2/liftover-1.4.0-cp313-cp313-win32.whl", hash = "sha256:43657559f3153d5865f35672558c13184b1181cbe54fc4aeed3cb75bed8967d8", size = 173841, upload-time = "2026-04-18T01:45:13.098Z" },
+    { url = "https://files.pythonhosted.org/packages/c1/e4/1dacb14e7e9f3fc107593bcaac58587007b5e0064ed5a47dc4151d6d3b47/liftover-1.4.0-cp313-cp313-win_amd64.whl", hash = "sha256:8e8d4e4a8723d0df9ea62aafbda62ad36b5910547ecdd2193c4936d63e491a22", size = 182648, upload-time = "2026-04-18T01:45:14.561Z" },
+    { url = "https://files.pythonhosted.org/packages/a5/a5/d19a3bb92ff913b46c6a683746a9a15b1f11c339ef1feb75afc4ee0c7bb8/liftover-1.4.0-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:755ffe14b68dded35796ec8a76a190bceec6151608d7b905da0925ca33e42ec9", size = 152506, upload-time = "2026-04-18T01:45:15.66Z" },
+    { url = "https://files.pythonhosted.org/packages/81/23/33cc4bc548dc6d6ba1a3718333dcea1613cb2c4bc6ccb3df97f24d4e6059/liftover-1.4.0-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:d3515386cb6758cba5daf59dde8f5371429a4d23a9174139cd0a9e46ad5093cb", size = 1138544, upload-time = "2026-04-18T01:45:16.887Z" },
+    { url = "https://files.pythonhosted.org/packages/af/3f/a7439b5576e9082c1a6efe64433d8b36ba6a904e3f8ee6254a0ae494d8c3/liftover-1.4.0-cp314-cp314-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:4bdd580351d8cc241ca68b779301581ea6d48771572658abbc698d6ef6954d9d", size = 1000546, upload-time = "2026-04-18T01:45:18.32Z" },
+    { url = "https://files.pythonhosted.org/packages/91/99/fadce32e559e7d26dd37172e5ed3b741205100fd1e8af5389feee65ac7a3/liftover-1.4.0-cp314-cp314-musllinux_1_2_aarch64.whl", hash = "sha256:9ccc7ee191bad7a52eef7b59aab920c7f60fe9e33d0a70c37a712982640ae4aa", size = 1956848, upload-time = "2026-04-18T01:45:19.703Z" },
+    { url = "https://files.pythonhosted.org/packages/d2/ff/30e677df40fdc7868a9899fcdae6d9d7cc839594718fe304d4f0f693b48d/liftover-1.4.0-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:b636529d082b2565f80f2d458730ddebede43becff2ea7f8a217123dc9b462cc", size = 2043896, upload-time = "2026-04-18T01:45:21.12Z" },
+    { url = "https://files.pythonhosted.org/packages/66/a6/6efaf4fb507374de1d410cc3b790bb5dc166696acf4ff2f8cdf610a14dcf/liftover-1.4.0-cp314-cp314-win32.whl", hash = "sha256:5fd321980d96d6de682d00e6798b6bae7b3f92a467aa3334b7d60ad9a1e64252", size = 177007, upload-time = "2026-04-18T01:45:22.523Z" },
+    { url = "https://files.pythonhosted.org/packages/e5/30/760281cfc316f980e335a75e49fddfab478fca171bc27667dc022380490c/liftover-1.4.0-cp314-cp314-win_amd64.whl", hash = "sha256:dfec5f05b82a74e07ae65f117172c06fe5986569b493ba6479b71a5cbafaa581", size = 186163, upload-time = "2026-04-18T01:45:24.096Z" },
 ]
 
 [[package]]
@@ -3298,13 +3322,13 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "scipy", specifier = ">=1.17.1" },
     { name = "submitit", specifier = ">=1.5.4" },
-    { name = "variant-effect-prediction", git = "ssh://git@github.com/christian728504/variant-effect-prediction.git?rev=255b00d900fe532743eb5ab122dba60df579554e" },
+    { name = "variant-effect-prediction", git = "https://github.com/christian728504/variant-effect-prediction.git" },
 ]
 
 [[package]]
 name = "variant-effect-prediction"
 version = "0.1.0"
-source = { git = "ssh://git@github.com/christian728504/variant-effect-prediction.git?rev=255b00d900fe532743eb5ab122dba60df579554e#255b00d900fe532743eb5ab122dba60df579554e" }
+source = { git = "https://github.com/christian728504/variant-effect-prediction.git#c77f11c7e6f0a69613c0557c12f96a498cf1af45" }
 dependencies = [
     { name = "alphagenome-pytorch" },
     { name = "borzoi-pytorch" },

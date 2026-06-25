@@ -142,7 +142,7 @@ no templating. To add a model run to a dataset, add a plan row; to add a dataset
 
 | Model | Scoring family | Weights source |
 | --- | --- | --- |
-| ChromBPNet | BPNet-like | h5 folds (primary/AFGR) or ENCODE tar |
+| ChromBPNet | BPNet-like | `.torch` folds (converted from h5/tar) |
 | Cherimoya | BPNet-like | `.torch` folds |
 | AlphaGenome | many-tracks | safetensors (assay-selected head) |
 | Enformer | many-tracks | DNase-track proxy |
@@ -171,13 +171,12 @@ The harness resolves every input against `data/` (repo-relative; overridable in 
 data/
   references/   hg38/  hg19/                     # bgzip + faidx genome FASTAs
   qtl/          *.benchmarking.all.tsv           # the benchmark datasets
-  weights/      chrombpnet/  cherimoya/  enformer-pytorch/
-                borzoi-pytorch/  alphagenome-pytorch/
-  metadata/     chrombpnet-model-tars.json       # auto-generated lookup cache
+  weights/      chrombpnet/  cherimoya/          # BPNet-like: <celltype>/fold_{i}.torch
+                enformer-pytorch/  borzoi-pytorch/  alphagenome-pytorch/
 ```
 
 > [!IMPORTANT]
-> `data/`, `results/`, and `logs/` are gitignored. The inputs (~14 GB) are not tracked —
+> `data/`, `results/`, and `logs/` are gitignored. The inputs (~7 GB) are not tracked —
 > they must be present on disk before `submit`. `dry-run`'s pre-flight reports what's missing.
 
 ## Outputs
